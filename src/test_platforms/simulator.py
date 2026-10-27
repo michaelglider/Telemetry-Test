@@ -1,9 +1,10 @@
-
+#import libraries/modules
+from src.test_platforms.device_interface import DeviceInterface
 from dataclasses import dataclass, asdict
 import json
 import time
 
-
+#set up class for telemetry data
 @dataclass
 class Telemetry:
     sequence: int
@@ -13,8 +14,9 @@ class Telemetry:
     motor_current_a: float
     status: str
 
-
-class DeviceSimulator:
+#set up class for the simulation of the data
+class DeviceSimulator(DeviceInterface):
+    #set up attributes for each instance of simulated hardware
     def __init__(self):
         self.started_at = time.monotonic()
         self.sequence = 0
@@ -22,23 +24,27 @@ class DeviceSimulator:
         self.fault = None
 
     def get_telemetry(self):
+        #increment sequence counter everytime this gets called
         self.sequence += 1
 
-        # Deterministic nominal measurements make tests repeatable.
+        # nominal measurements
         temperature = 32.5
         voltage = 12.0
+        #higher current for when the device is working
         current = 1.4 if self.output_enabled else 0.1
         status = "READY"
 
+        #inject faults for simulation
         if self.fault == "overtemperature":
             temperature = 95.0
         elif self.fault == "undervoltage":
             voltage = 8.0
         elif self.fault == "overcurrent":
             current = 12.0
-        elif self.fault == "device_error":
+        elif self.fault  == "device_error":
             status = "ERROR"
 
+        #return data 
         return Telemetry(
             sequence=self.sequence,
             timestamp_ms=int(
@@ -50,6 +56,7 @@ class DeviceSimulator:
             status=status,
         )
 
+    #message handler
     def handle_command(self, message):
         command = message.get("name")
         command_id = message.get("command_id", "unknown")
